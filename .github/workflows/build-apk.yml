@@ -28,21 +28,15 @@ jobs:
           NSH_DIR=$(find ~/.cache/super-looi/nsh -maxdepth 3 -name "xtask" -exec dirname {} \; | head -n 1)
           cd "$NSH_DIR"
           cargo xtask android --dev
+          cargo xtask android --release
           mkdir -p ~/.cache/super-looi/nsh/dev-cli/android
           ln -sfn "$NSH_DIR/target/android/debug-dev" ~/.cache/super-looi/nsh/dev-cli/android/f4d68f7-8fbfa59a2f1c-dev
+          ln -sfn "$NSH_DIR/target/android/release" ~/.cache/super-looi/nsh/dev-cli/android/f4d68f7-8fbfa59a2f1c-release
       - run: |
           cd $GITHUB_WORKSPACE
-          node -e '
-            const fs = require("fs");
-            let code = fs.readFileSync("apps/nsh/scripts/nsh.ts", "utf8");
-            code = code.replace(/if\s*\(\!connected\)[^\n]+/g, "");
-            code = code.replace(/adb\s+devices/g, "printf \"List of devices attached\\ndummy\\tdevice\\n\"");
-            code = code.replace(/spawnSync\("adb"[^\)]+\)/g, "{ status: 0, stdout: \"List of devices attached\\ndummy\\tdevice\\n\", stderr: \"\" }");
-            fs.writeFileSync("apps/nsh/scripts/nsh.ts", code);
-          '
-          pnpm --filter @super-looi/nsh exec node --import tsx scripts/nsh.ts run --target android --device "dummy" || true
+          pnpm --filter @super-looi/nsh exec node --import tsx scripts/nsh.ts package --target android
           mkdir -p $GITHUB_WORKSPACE/output-apks
-          find ~/.cache/super-looi $GITHUB_WORKSPACE -type f -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/output-apks/ \;
+          find $GITHUB_WORKSPACE ~/.cache/super-looi -type f -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/output-apks/ \;
           ls -lh $GITHUB_WORKSPACE/output-apks/
       - uses: actions/upload-artifact@v4
         with:
