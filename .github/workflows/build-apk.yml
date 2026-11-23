@@ -27,10 +27,8 @@ jobs:
       - run: |
           NSH_DIR=$(find ~/.cache/super-looi/nsh -maxdepth 3 -name "xtask" -exec dirname {} \; | head -n 1)
           cd "$NSH_DIR"
-          cargo xtask android --dev
           cargo xtask android --release
           mkdir -p ~/.cache/super-looi/nsh/dev-cli/android
-          ln -sfn "$NSH_DIR/target/android/debug-dev" ~/.cache/super-looi/nsh/dev-cli/android/f4d68f7-8fbfa59a2f1c-dev
           ln -sfn "$NSH_DIR/target/android/release" ~/.cache/super-looi/nsh/dev-cli/android/f4d68f7-8fbfa59a2f1c-release
       - run: |
           cd $GITHUB_WORKSPACE
@@ -40,5 +38,5 @@ jobs:
           ls -lh $GITHUB_WORKSPACE/output-apks/
       - uses: actions/upload-artifact@v4
         with:
-          name: super-looi-android
+          name: super-looi-android-fixed
           path: output-apks/*.apk
