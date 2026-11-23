@@ -15,14 +15,15 @@ jobs:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
       - run: |
           sudo apt-get update && sudo apt-get install -y libclang-dev
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;35.0.0" "ndk;28.2.13676358"
+          SDK_DIR="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          echo "ANDROID_HOME=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK_DIR/ndk/28.2.13676358" >> $GITHUB_ENV
+          yes | $SDK_DIR/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "platforms;android-36" "build-tools;35.0.0" "ndk;28.2.13676358"
       - run: |
           sed -i 's/if (thin.status !== 0)/if (false)/g' apps/nsh/scripts/prepare-sherpa-kws.mjs
           pnpm install --frozen-lockfile
           pnpm build
-        env:
-          CARGO_PROFILE_DEV_DEBUG: 0
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
       - run: |
           pnpm --filter @super-looi/nsh exec node --import tsx scripts/nsh.ts build --target android || true
           NSH_DIR=$(find ~/.cache/super-looi/nsh -maxdepth 3 -name "xtask" -exec dirname {} \; | head -n 1)
@@ -30,18 +31,12 @@ jobs:
           cargo xtask android --dev
           mkdir -p ~/.cache/super-looi/nsh/dev-cli/android
           ln -sfn "$NSH_DIR/target/android/debug-dev" ~/.cache/super-looi/nsh/dev-cli/android/f4d68f7-8fbfa59a2f1c-dev
-        env:
-          CARGO_PROFILE_DEV_DEBUG: 0
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
       - run: |
           cd $GITHUB_WORKSPACE
           pnpm --filter @super-looi/nsh exec node --import tsx scripts/nsh.ts build --target android || true
-        env:
-          CARGO_PROFILE_DEV_DEBUG: 0
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
+          mkdir -p $GITHUB_WORKSPACE/output-apks
+          find ~/.cache/super-looi $GITHUB_WORKSPACE -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/output-apks/ \;
       - uses: actions/upload-artifact@v4
         with:
           name: super-looi-android
-          path: |
-            **/*.apk
-            ~/.cache/super-looi/nsh/**/*.apk
+          path: output-apks/*.apk
